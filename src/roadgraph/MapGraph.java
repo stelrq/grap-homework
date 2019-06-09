@@ -297,19 +297,21 @@ public class MapGraph {
 		PriorityQueue<DijkstraNode> toExplore = new PriorityQueue<DijkstraNode>();
 		// YOU WILL NEED TO DEFINE AN INNER CLASS THAT ENCAPSULATES GEOGRAPHIC POINT AND DISTANCE TO THE NODE
 		HashSet<GeographicPoint> visited = new HashSet<GeographicPoint>();
+		//Initialize table to store distances. Key is Point under examination, The value stores that node and the shortest known distance.
 		HashMap<GeographicPoint, DijkstraNode> table = new HashMap<GeographicPoint, DijkstraNode>();
 		for (GeographicPoint g : nodes_outedges.keySet()) {
-			table.put(g, new DijkstraNode(null, Double.POSITIVE_INFINITY));
+			table.put(g, new DijkstraNode(g, Double.POSITIVE_INFINITY));
 		}
-		toExplore.add(new DijkstraNode(start, 0));
+		DijkstraNode next = new DijkstraNode(start, 0);
+		toExplore.add(next);
 		while (!toExplore.isEmpty()) {
 			
-			DijkstraNode next = toExplore.remove();
+			next = toExplore.remove();
 			
-			if (!visited.contains(next)) {
+			if (!visited.contains(next.g)) {
 				visited.add(next.g);
 				
-				if (next.equals(goal)) {
+				if (next.g.equals(goal)) {
 					break;
 				}
 				
@@ -318,15 +320,11 @@ public class MapGraph {
 				for (MapEdge m: mapEdges) {
 					
 					if (!visited.contains(m.getEndPoint())) {
-						visited.add(m.getEndPoint());
-						parentMap.put(m.getEndPoint(), next.g);
-						if (next.distance + m.getLength() < table.get(m.getEndPoint()).distance) {
-							
-							table.get(m.getEndPoint()).g = next.g;
-							//WE ENDED HERE 6/6/19
-							
+						if (next.g.distance(goal) + next.distance + m.getLength() < table.get(m.getEndPoint()).distance) {
+							table.get(m.getEndPoint()).distance = next.g.distance(goal) + next.distance + m.getLength();
+							toExplore.add(table.get(m.getEndPoint()));
+							parentMap.put(m.getEndPoint(), next.g);
 						}
-						toExplore.add(new DijkstraNode(m.getEndPoint(), m.getLength()));
 						
 					}
 						
@@ -334,11 +332,12 @@ public class MapGraph {
 			}
 			
 			
+		}	
+		if (!next.g.equals(goal)) {
+			System.out.println("We could not find a path from start to goal");
+			return null;
 		}
-		// 7. TO DO
-		
-		// Reconstruct the parent path
-		List<GeographicPoint> path = reconstructPath(parentMap, start, goal);
+			List<GeographicPoint> path = reconstructPath(parentMap, start, goal);
 
 		return path;
 		
@@ -378,16 +377,71 @@ public class MapGraph {
 	public List<GeographicPoint> aStarSearch(GeographicPoint start, 
 											 GeographicPoint goal, Consumer<GeographicPoint> nodeSearched)
 	{
+		if (start == null || goal == null)
+			throw new NullPointerException("Cannot find route from or to null node");
 		
-		// WHERE EAGLES DARE - EXTRA CREDIT TO DO
+		if (nodes_outedges.get(start) == null) {
+			System.err.println("Start node " + start + " does not exist");
+			return null;
+		}
+		if (nodes_outedges.get(goal) == null) {
+			System.err.println("End node " + goal + " does not exist");
+			return null;
+		}
+
+		// setup to begin A*
+		HashMap<GeographicPoint,GeographicPoint> parentMap = new HashMap<GeographicPoint,GeographicPoint>();
+		PriorityQueue<DijkstraNode> toExplore = new PriorityQueue<DijkstraNode>();
+		// YOU WILL NEED TO DEFINE AN INNER CLASS THAT ENCAPSULATES GEOGRAPHIC POINT AND DISTANCE TO THE NODE
+		HashSet<GeographicPoint> visited = new HashSet<GeographicPoint>();
+		//Initialize table to store distances. Key is Point under examination, The value stores that node and the shortest known distance.
+		HashMap<GeographicPoint, DijkstraNode> table = new HashMap<GeographicPoint, DijkstraNode>();
+		for (GeographicPoint g : nodes_outedges.keySet()) {
+			table.put(g, new DijkstraNode(g, Double.POSITIVE_INFINITY));
+		}
+		DijkstraNode next = new DijkstraNode(start, 0);
+		toExplore.add(next);
+		while (!toExplore.isEmpty()) {
+			
+			next = toExplore.remove();
+			
+			if (!visited.contains(next.g)) {
+				visited.add(next.g);
+				
+				if (next.g.equals(goal)) {
+					break;
+				}
+				
+				List<MapEdge> mapEdges = getEdges(next.g);
+				
+				for (MapEdge m: mapEdges) {
+					
+					if (!visited.contains(m.getEndPoint())) {
+						if (next.distance + m.getLength() < table.get(m.getEndPoint()).distance) {
+							table.get(m.getEndPoint()).distance = next.distance + m.getLength();
+							toExplore.add(table.get(m.getEndPoint()));
+							parentMap.put(m.getEndPoint(), next.g);
+						}
+						
+					}
+						
+				}
+			}
+			
+			
+		}	
+		if (!next.g.equals(goal)) {
+			System.out.println("We could not find a path from start to goal");
+			return null;
+		}
+			List<GeographicPoint> path = reconstructPath(parentMap, start, goal);
+
+		return path;
 		
-			// Reconstruct the parent path
-			List<GeographicPoint> path = null;
-			//reconstructPath(parentMap, startNode, endNode);
-
-			return path;
-
+		
 	}
+
+
 	
 	// you can use this method for testing
 
